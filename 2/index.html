@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scene 2</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+          rel="stylesheet" />
+    <link rel="stylesheet" href="assets/styles/theme.css" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+            defer></script>
+    <script src="https://kit.fontawesome.com/50bf8e834a.js"
+            crossorigin="anonymous"
+            defer></script>
+    <!-- Babylon.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+    <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+    <script src="https://preview.babylonjs.com/ammo.js"></script>
+    <script src="https://preview.babylonjs.com/cannon.js"></script>
+    <script src="https://preview.babylonjs.com/Oimo.js"></script>
+    <script src="https://preview.babylonjs.com/earcut.min.js"></script>
+    <script src="https://preview.babylonjs.com/babylon.js"></script>
+    <script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+    <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+    <script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+    <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+    <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+    <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+    <style>
+        @media only screen and (min-device-width : 320px) and (max-device-width : 412px) {
+            .theme__plain {
+                height: 90vh !important;
+            }
+			#renderCanvas {
+				height: 69vh !important;
+			}
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 79vh;
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="theme__plain">
+        <div class="theme__plain__header">
+            <button type="button" class="btn-white icon-btn btn btn-sm">
+                <i class="fal fa-times" style="display:none"></i>
+            </button>
+            <!--<div class="dropdown">
+              <button
+                class="btn-white icon-btn btn btn-sm"
+                type="button"
+                data-bs-toggle="dropdown"
+              >
+                <i class="far fa-ellipsis-h"></i>
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#?">Button 1</a></li>
+                <li><a class="dropdown-item" href="#?">Button 2</a></li>
+                <li><a class="dropdown-item" href="#?">Button 3</a></li>
+              </ul>
+            </div>-->
+        </div>
+        <div class="theme__plain__body">
+            <canvas id="renderCanvas"></canvas>
+            <div id="container"></div>
+        </div>
+        <div class="theme__plain__footer">
+            <button type="button"
+                    type="button"
+                    class="btn-white icon-btn btn btn-sm"
+                    onclick="javascript:document.location.href='../1/index.html'">
+                <i class="far fa-arrow-left"></i>
+            </button>
+            <button type="button"
+                    class="btn btn-white cursor-auto">
+                Scene 2 of 2
+            </button>
+            <button type="button"
+                    type="button"
+                    class="btn-white icon-btn btn btn-sm"
+                    onclick="javascript:;">
+                <i class="far fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+    <script type="text/javascript">
+        var canvas = document.getElementById("renderCanvas");
+
+        var startRenderLoop = function (engine, canvas) {
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        }
+
+        var sceneIndex = 2;
+        var engine = null;
+        var scene = null;
+        var sceneTwo;
+        var scenes;
+        var sceneToRender = null;
+        var currentSceneMeshes = [];
+        var meshNodeData = [];
+        var gltfObjects = [];
+        var meshParent, VideoTexture, audio;
+        var videos = new Map();
+        var audios = new Map();
+        var copyMap = new Map();
+        var label;
+        var createDefaultEngine = function () { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, disableWebGL2Support: false }); };
+        /**
+         * WebXR ar demo using hit-test, anchors, and plane detection.
+         *
+         * Every press on the screen will add a figure in the requested position (if the ring is displayed). Those meshes will be kept in place by the AR system you are using.
+         *
+         * Working (at the moment) on android devices and the latest chrome.
+         *
+         * Created by Raanan Weber (@RaananW)
+         */
+
+        var createScene = async function () {
+
+            // This creates a basic Babylon Scene object (non-mesh)
+            var scene = new BABYLON.Scene(engine);
+            this.sceneTwo = scene;
+            var tapCount = 0;
+
+            // This creates and positions a free camera (non-mesh)
+            var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1, -5), scene);
+
+            // This targets the camera to scene origin
+            camera.setTarget(BABYLON.Vector3.Zero());
+
+            // This attaches the camera to the canvas
+            camera.attachControl(canvas, true);
+
+            // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+            var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+
+            // Default intensity is 1. Let's dim the light a small amount
+            light.intensity = 0.7;
+
+            var dirLight = new BABYLON.DirectionalLight('light', new BABYLON.Vector3(0, -1, -0.5), scene);
+            dirLight.position = new BABYLON.Vector3(0, 5, -5);
+
+            var shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight);
+            shadowGenerator.useBlurExponentialShadowMap = true;
+            shadowGenerator.blurKernel = 32;
+
+            console.log("add");
+
+
+            readJson();
+
+            // const model = await BABYLON.SceneLoader.ImportMeshAsync("", "", "dummy3.babylon", scene);
+
+            var xr = await scene.createDefaultXRExperienceAsync({
+                uiOptions: {
+                    sessionMode: "immersive-ar",
+                    referenceSpaceType: "local-floor"
+                },
+                optionalFeatures: true
+            });
+
+            const fm = xr.baseExperience.featuresManager;
+
+            const xrTest = fm.enableFeature(BABYLON.WebXRHitTest.Name, "latest");
+            const xrPlanes = fm.enableFeature(BABYLON.WebXRPlaneDetector.Name, "latest");
+            const anchors = fm.enableFeature(BABYLON.WebXRAnchorSystem.Name, 'latest');
+
+            const xrBackgroundRemover = fm.enableFeature(BABYLON.WebXRBackgroundRemover.Name);
+
+            //  let b = model.meshes[0];//BABYLON.CylinderBuilder.CreateCylinder('cylinder', { diameterBottom: 0.2, diameterTop: 0.4, height: 0.5 });
+            let b = BABYLON.CylinderBuilder.CreateCylinder('cylinder', { diameterBottom: 0.2, diameterTop: 0.4, height: 0.5 });
+            b.rotationQuaternion = new BABYLON.Quaternion();
+            // b.isVisible = false;
+            shadowGenerator.addShadowCaster(b, true);
+
+            const marker = BABYLON.MeshBuilder.CreateTorus('marker', { diameter: 0.15, thickness: 0.05 });
+            marker.isVisible = false;
+            marker.rotationQuaternion = new BABYLON.Quaternion();
+
+
+            let hitTest;
+
+            b.isVisible = false;
+
+            xrTest.onHitTestResultObservable.add((results) => {
+                if (results.length) {
+                    if (tapCount == 0) {
+                        marker.isVisible = true;
+                    }
+                    hitTest = results[0];
+                    /*
+                    for(let i=0;i<meshNodeData.length;i++)
+                    {
+                      hitTest.transformationMatrix.decompose(undefined, meshNodeData[i].rotationQuaternion, meshNodeData[i].position);
+                    }
+                    */
+                    //  hitTest.transformationMatrix.decompose(undefined, meshNodeData[0].rotationQuaternion, meshNodeData[0].position);
+                    hitTest.transformationMatrix.decompose(undefined, meshParent.rotationQuaternion, meshParent.position);
+                    hitTest.transformationMatrix.decompose(undefined, marker.rotationQuaternion, marker.position);
+                } else {
+                    marker.isVisible = false;
+                    hitTest = undefined;
+                }
+            });
+            const mat1 = new BABYLON.StandardMaterial('1', scene);
+            mat1.diffuseColor = BABYLON.Color3.Red();
+            const mat2 = new BABYLON.StandardMaterial('1', scene);
+            mat2.diffuseColor = BABYLON.Color3.Blue();
+
+            if (anchors) {
+                console.log('anchors attached');
+                anchors.onAnchorAddedObservable.add(anchor => {
+                    console.log('attaching', meshNodeData.length);
+                    //  b.isVisible = true;
+                    /*
+                    for(let i=0;i<meshNodeData.length;i++)
+                    {
+                        meshNodeData[i].isVisible=true;
+                      console.log("aaa "+meshNodeData[i]);
+                      anchor.attachedNode = meshNodeData[i];
+                    }
+                    */
+                    //   anchor.attachedNode = b;//b.clone("mensch");
+
+                    meshNodeData[0].isVisible = true;
+                    //   anchor.attachedNode = meshNodeData[0];
+                    anchor.attachedNode = meshParent;
+
+                    const children = meshNodeData[0].getChildren();
+                    for (let i = 0; i < children.length; i++) {
+                        const child = children[i];
+                        // Do something with each child node
+                        child.isVisible = true;
+                    }
+
+                    shadowGenerator.addShadowCaster(anchor.attachedNode, true);
+
+                    //disable from scene 2
+                    for (let i = 1; i < meshNodeData.length; i++) {
+                        meshNodeData[i].isVisible = false;
+                    }
+
+                    //loadgltf of scene 1
+                    loadGltfOfScene(0);
+
+                    // b.isVisible = false;
+                })
+
+                anchors.onAnchorRemovedObservable.add(anchor => {
+                    console.log('disposing', anchor);
+                    if (anchor) {
+                        anchor.attachedNode.isVisible = false;
+                        anchor.attachedNode.dispose();
+                    }
+                });
+            }
+
+            scene.onPointerDown = (evt, pickInfo) => {
+                if (hitTest && anchors && xr.baseExperience.state === BABYLON.WebXRState.IN_XR) {
+                    if (tapCount == 0) {
+                        anchors.addAnchorPointUsingHitTestResultAsync(hitTest);
+                        tapCount++;
+                        marker.isVisible = false;
+                    }
+                }
+
+                for (let i = 0; i < meshNodeData.length; i++) {
+                    console.log("tap1");
+                    const children = meshNodeData[i].getChildren();
+                    for (let j = 0; j < children.length; j++) {
+                        console.log("tap2");
+                        const child = children[j];
+                        if (pickInfo.pickedMesh == child) {
+                            if (pickInfo.pickedMesh.name.includes("video")) {
+                                if (videos.get(copyMap.get(child)).video.paused)
+                                    videos.get(copyMap.get(child)).video.play();
+                                else
+                                    videos.get(copyMap.get(child)).video.pause();
+                            }
+
+                            if (pickInfo.pickedMesh.name.includes("audio")) {
+                                if (audios.get(copyMap.get(child)).paused) {
+                                    console.log("audio play");
+                                    audios.get(copyMap.get(child)).play();
+                                }
+                                else {
+                                    console.log("audio pause");
+                                    audios.get(copyMap.get(child)).pause();
+                                }
+                            }
+                            console.log("tap3 found!");
+                        }
+                    }
+                }
+
+                this.scenes.forEach(element => {
+                    element.meshObjects.forEach(element => {
+                        if (pickInfo.pickedMesh != null) {
+                            if (pickInfo.pickedMesh.name != null) {
+
+                                console.log("mesh name : " + pickInfo.pickedMesh.name);
+
+                                if (pickInfo.pickedMesh.name.includes(element.meshType)) {
+                                    console.log("go to scene " + element.actions);
+                                    loadSceneNew(parseInt(element.actions));
+                                }
+
+                                /*
+                            if(pickInfo.pickedMesh.name.includes("video"))
+                               {
+                                    if (VideoTexture.video.paused)
+                                        VideoTexture.video.play();
+                                    else
+                                        VideoTexture.video.pause();
+                               }
+
+                            if(pickInfo.pickedMesh.name.includes("audio"))
+                               {
+                                    if (audio.paused)
+                                    {
+                                        console.log("audio play");
+                                        audio.play();
+                                    }
+                                    else
+                                    {
+                                        console.log("audio pause");
+                                        audio.pause();
+                                    }
+                               }
+                                */
+
+                            }
+                        }
+                    });
+                });
+            }
+
+            const planes = [];
+
+            xrPlanes.onPlaneAddedObservable.add(plane => {
+                plane.polygonDefinition.push(plane.polygonDefinition[0]);
+                var polygon_triangulation = new BABYLON.PolygonMeshBuilder("name", plane.polygonDefinition.map((p) => new BABYLON.Vector2(p.x, p.z)), scene);
+                var polygon = polygon_triangulation.build(false, 0.01);
+                plane.mesh = polygon; //BABYLON.TubeBuilder.CreateTube("tube", { path: plane.polygonDefinition, radius: 0.02, sideOrientation: BABYLON.Mesh.FRONTSIDE, updatable: true }, scene);
+                //}
+                planes[plane.id] = (plane.mesh);
+                const mat = new BABYLON.StandardMaterial("mat", scene);
+                mat.alpha = 0.5;
+                mat.diffuseColor = BABYLON.Color3.Random();
+                polygon.createNormals();
+                // polygon.receiveShadows = true;
+                plane.mesh.material = mat;
+
+                plane.mesh.rotationQuaternion = new BABYLON.Quaternion();
+                plane.transformationMatrix.decompose(plane.mesh.scaling, plane.mesh.rotationQuaternion, plane.mesh.position);
+            });
+
+            xrPlanes.onPlaneUpdatedObservable.add(plane => {
+                let mat;
+                if (plane.mesh) {
+                    mat = plane.mesh.material;
+                    plane.mesh.dispose(false, false);
+                }
+                const some = plane.polygonDefinition.some(p => !p);
+                if (some) {
+                    return;
+                }
+                plane.polygonDefinition.push(plane.polygonDefinition[0]);
+                var polygon_triangulation = new BABYLON.PolygonMeshBuilder("name", plane.polygonDefinition.map((p) => new BABYLON.Vector2(p.x, p.z)), scene);
+                var polygon = polygon_triangulation.build(false, 0.01);
+                polygon.createNormals();
+                plane.mesh = polygon;// BABYLON.TubeBuilder.CreateTube("tube", { path: plane.polygonDefinition, radius: 0.02, sideOrientation: BABYLON.Mesh.FRONTSIDE, updatable: true }, scene);
+                //}
+                planes[plane.id] = (plane.mesh);
+                plane.mesh.material = mat;
+                plane.mesh.rotationQuaternion = new BABYLON.Quaternion();
+                plane.transformationMatrix.decompose(plane.mesh.scaling, plane.mesh.rotationQuaternion, plane.mesh.position);
+                plane.mesh.receiveShadows = true;
+            })
+
+            xrPlanes.onPlaneRemovedObservable.add(plane => {
+                if (plane && planes[plane.id]) {
+                    planes[plane.id].dispose()
+                }
+            })
+
+            xr.baseExperience.sessionManager.onXRSessionInit.add(() => {
+                planes.forEach(plane => plane.dispose());
+                while (planes.pop()) { };
+            });
+
+
+
+            return scene;
+
+        };
+        window.initFunction = async function () {
+
+
+            var asyncEngineCreation = async function () {
+                try {
+                    return createDefaultEngine();
+                } catch (e) {
+                    console.log("the available createEngine function failed. Creating the default engine instead");
+                    return createDefaultEngine();
+                }
+            }
+
+            window.engine = await asyncEngineCreation();
+            if (!engine) throw 'engine should not be null.';
+            startRenderLoop(engine, canvas);
+            window.scene = createScene();
+        };
+
+
+
+        initFunction().then(() => {
+            scene.then(returnedScene => { sceneToRender = returnedScene; });
+        });
+
+        function readJson() {
+            var data = "[{\"id\":1,\"name\":\"Scene 1\",\"meshObjects\":[{\"id\":\"0\",\"name\":\"new image\",\"sceneId\":1,\"meshType\":\"image\",\"isLock\":false,\"position\":{\"x\":-1.5054553747177124,\"y\":0.2657598555088043,\"z\":0.16906441748142242},\"rotation\":{\"x\":-0.09727749598963352,\"y\":1.6136743972360228,\"z\":-0.014363855213537181},\"scale\":{\"x\":1.0000003704709948,\"y\":1.0000001558170395,\"z\":1.000000210041187},\"mediaUrl\":\"../content/media/512/en-us/545ff154-6f25-409e-b6b2-a895d10eb2b7.jpg\",\"mediaName\":\"depositphotos_176577870-stock-illustration-cute-smiling-funny-robot-chat.jpg\",\"actionData\":{}},{\"id\":\"5\",\"name\":\"new cube\",\"sceneId\":1,\"meshType\":\"cube\",\"isLock\":false,\"position\":{\"x\":1.6801173686981201,\"y\":0,\"z\":0},\"rotation\":{\"x\":-0.0007348859296408816,\"y\":0,\"z\":0},\"scale\":{\"x\":2,\"y\":1.9999991095455578,\"z\":1.9999991095455578},\"mediaName\":\"Cube\",\"actionData\":{}},{\"id\":\"9\",\"name\":\"new sphere\",\"sceneId\":1,\"meshType\":\"sphere\",\"isLock\":false,\"position\":{\"x\":0,\"y\":0.4536207318305969,\"z\":2.297516345977783},\"rotation\":{\"x\":0,\"y\":0,\"z\":0},\"scale\":{\"x\":1.5,\"y\":1.5,\"z\":1.5},\"mediaName\":\"Sphere\"},{\"id\":\"7\",\"name\":\"new cone\",\"sceneId\":1,\"meshType\":\"cone\",\"isLock\":false,\"position\":{\"x\":1.2603015899658203,\"y\":0.05504433438181877,\"z\":-3.63435435295105},\"rotation\":{\"x\":0,\"y\":0,\"z\":0},\"scale\":{\"x\":1.5,\"y\":1.5,\"z\":1.5},\"mediaName\":\"Cone\",\"actionData\":{}},{\"id\":\"7\",\"name\":\"new capsule\",\"sceneId\":1,\"meshType\":\"capsule\",\"isLock\":false,\"position\":{\"x\":0,\"y\":1.1629985570907593,\"z\":-2.324688196182251},\"rotation\":{\"x\":0,\"y\":0,\"z\":0},\"scale\":{\"x\":1.5,\"y\":1.5,\"z\":1.5},\"mediaName\":\"Capsule\",\"actionData\":{}},{\"id\":\"5\",\"name\":\"button\",\"sceneId\":1,\"meshType\":\"button\",\"isLock\":false,\"position\":{\"x\":0,\"y\":0,\"z\":0.1},\"rotation\":{\"x\":0,\"y\":-1.5,\"z\":0},\"scale\":{\"x\":1,\"y\":1,\"z\":1},\"asImgBtn\":false}],\"sceneType\":1,\"mediaUrl\":\"../content/media/512/en-us/545ff154-6f25-409e-b6b2-a895d10eb2b7.jpg\",\"isLoop\":false,\"animation\":{\"entrance\":\"\",\"animation\":\"\",\"duration\":\"\",\"delay\":\"\"}},{\"id\":2,\"name\":\"Scene 2\",\"meshObjects\":[{\"id\":\"3\",\"name\":\"new cylinder\",\"sceneId\":2,\"meshType\":\"cylinder\",\"isLock\":false,\"position\":{\"x\":1.8047221899032593,\"y\":-0.29153838753700256,\"z\":-1.7818026542663574},\"rotation\":{\"x\":0,\"y\":0,\"z\":0},\"scale\":{\"x\":2,\"y\":2,\"z\":2},\"mediaName\":\"Cylinder\",\"actionData\":{}},{\"id\":\"5\",\"name\":\"new text\",\"sceneId\":2,\"meshType\":\"text\",\"isLock\":false,\"position\":{\"x\":-0.2950163185596466,\"y\":0.7190760970115662,\"z\":0.9913477301597595},\"rotation\":{\"x\":0,\"y\":-1.500000074879687,\"z\":0},\"scale\":{\"x\":1.0000000039643702,\"y\":1,\"z\":1.0000000039643702},\"mediaName\":\"Text\",\"mediaUrl\":\"\",\"label\":\"Sample Text\",\"objectSettings\":{\"transparency\":\"\",\"isBackground\":false,\"backgroundColor\":\"\",\"textColor\":\"#000000\",\"textStyle\":\"arial\",\"height\":75,\"width\":250},\"actionData\":{}},{\"id\":\"1\",\"name\":\"new image\",\"sceneId\":2,\"meshType\":\"image\",\"isLock\":false,\"position\":{\"x\":-4.613968849182129,\"y\":0,\"z\":0.4271984100341797},\"rotation\":{\"x\":0,\"y\":-1.500000074879687,\"z\":0},\"scale\":{\"x\":1.0000000039643702,\"y\":1,\"z\":1.0000000039643702},\"mediaUrl\":\"../content/media/512/en-us/50df4aed-919f-4475-b50b-c50ae88ebd62.jpg\",\"mediaName\":\"depositphotos_176577880-stock-illustration-cute-smiling-funny-robot-chat.jpg\",\"actionData\":{}}],\"sceneType\":2,\"mediaUrl\":\"\",\"animation\":{\"entrance\":\"\",\"animation\":\"\",\"duration\":\"\",\"delay\":\"\"},\"isLoop\":false}]";
+            scenes = JSON.parse(data);
+            console.log("a mesh  " + JSON.stringify(scenes));
+            var sceneNum = -1;
+
+
+
+            this.scenes.forEach(element => {
+                gltfObjects.push([]);
+                sceneNum++;
+
+                if (sceneIndex - 1 != sceneNum) {
+                    return;
+                }
+
+                if (element.sceneType != 2) {
+                    console.log("scene type is not ground tracking!");
+                    return;
+                }
+
+                element.meshObjects.forEach(element => {
+                    this.currentGLTFPosition = new BABYLON.Vector3(element.position?.x, element.position?.y, element.position?.z);
+                    if (element.meshType != "gltf") {
+
+                        if (element.meshType == "text") {
+                            this.label = element.label;
+                        }
+                        element.mesh = this.addSceneMesh(element.meshType, this.currentGLTFPosition, sceneNum, element.mediaUrl);
+                        console.log("z pos" + element.position?.z);
+                        element.mesh.position = new BABYLON.Vector3(element.position?.x * 0.4, element.position?.y * 0.4, element.position?.z * 0.4);
+                        element.mesh.rotation = new BABYLON.Vector3(element.rotation?.x, element.rotation?.y, element.rotation?.z);
+                        element.mesh.scaling = new BABYLON.Vector3(element.scale?.x * 0.4, element.scale?.y * 0.4, element.scale?.z * 0.4);
+                        element.mesh.setEnabled(false);
+                        console.log("");
+                    }
+                    else {
+                        this.addSceneMesh(element.meshType, this.currentGLTFPosition, 0, element.mediaUrl);
+
+                        //  element.mesh.setEnabled(false);
+                    }
+
+                });
+            });
+            this.generatePreview();
+        }
+
+        function loadgltf() {
+
+
+        }
+
+
+
+        function addSceneMesh(meshType, position, sceneNumber, url) {
+            console.log("mesh type : " + meshType);
+            switch (meshType) {
+                case ShapeType.Sphere:
+                    const sphere = BABYLON.MeshBuilder.CreateSphere('sphere', {}, this.scene);
+                    return sphere;
+                    break;
+                case ShapeType.Cube:
+                    const cube = BABYLON.MeshBuilder.CreateBox('cube', {}, this.scene);
+                    console.log('cube Added: ', cube)
+                    return cube;
+                    break;
+                case ShapeType.Cylinder:
+                    const cylinder = BABYLON.MeshBuilder.CreateCylinder('cylinder', {}, this.scene);
+                    return cylinder
+                    break;
+                case ShapeType.Cone:
+                    const cone = BABYLON.MeshBuilder.CreateCylinder('cone', {}, this.scene);
+                    console.log('cone Added: ', cone)
+                    return cone;
+                    break;
+                case ShapeType.Capsule:
+                    const capsule = BABYLON.MeshBuilder.CreateCapsule('capsule', {}, this.scene);
+                    console.log('capsule Added: ', capsule)
+                    return capsule;
+                    break;
+                case ShapeType.PolyheDron:
+                    const polyhedron = BABYLON.MeshBuilder.CreatePolyhedron('polyhedron', {}, this.scene);
+                    console.log('polyhedron Added: ', polyhedron)
+                    return polyhedron;
+                    break;
+                case ShapeType.GoldBerg:
+                    const goldberg = BABYLON.MeshBuilder.CreateGoldberg('goldberg', {}, this.scene);
+                    console.log('goldberg Added: ', goldberg)
+                    return goldberg;
+                    break;
+                case ShapeType.IcoSphere:
+                    const icosphere = BABYLON.MeshBuilder.CreateIcoSphere('icosphere', {}, this.scene);
+                    console.log('icosphere Added: ', icosphere)
+                    return icosphere;
+                    break;
+                case ShapeType.Torus:
+                    const torus = BABYLON.MeshBuilder.CreateTorus('torus', {}, this.scene);
+                    console.log('torus Added: ', torus)
+                    return torus;
+                    break;
+                case ShapeType.TorusKnot:
+                    const torusKnot = BABYLON.MeshBuilder.CreateTorusKnot('torusKnot', {}, this.scene);
+                    console.log('torusKnot Added: ', torusKnot)
+                    return torusKnot;
+                    break;
+                case ShapeType.GLTF:
+
+                    console.log("gltf to be added");
+
+                    let url2 = url.toString();
+                    const lastSlashIndex = url2.lastIndexOf("/");
+                    const assetName = url2.substring(lastSlashIndex + 1);
+                    const restOfUrl = url2.substring(0, lastSlashIndex + 1);
+
+                    console.log("Asset Name: " + assetName);
+                    console.log("Rest of URL: " + restOfUrl);
+
+
+                    console.log("add");
+                    const gltfObject = BABYLON.SceneLoader.ImportMesh(
+                        "",
+                        restOfUrl, assetName,
+                        this.sceneTwo,
+                        (meshes) => {
+                            meshes[0].position = position;
+                            //  dummy = this.getParentMesh(meshes[0]);
+                            meshes.forEach(mesh => {
+                                // Do something with mesh here
+                                console.log("gltf disabled");
+                                mesh.isVisible = false;
+                                gltfObjects[sceneNumber].push(mesh);
+                            });
+
+                            console.log("gltf object loaded : ");
+                        }
+                    );
+                    return gltfObject;
+
+                    // @ts-ignore
+                    gltfObject.onMeshLoadedObservable.addOnce(meshData => {
+
+                        //    this.gltfObjects.push(this.getParentMesh(meshData));
+                        console.log("waaat " + meshData);
+                        meshData.setEnabled(false);
+                        // this.addGLTFMesh();
+                    });
+
+                    break;
+                case ShapeType.Image:
+                    var planeOpts = {
+                        height: 2,
+                        width: 2,
+                        sideOrientation: BABYLON.Mesh.DOUBLESIDE
+                    };
+                    var Image = BABYLON.MeshBuilder.CreatePlane("plane", planeOpts, this.scene);
+                    var pos = (new BABYLON.Vector3(0, 0, 0.1))
+                    Image.position = position;
+                    // texture and material
+                    var url = "https://upload.wikimedia.org/wikipedia/en/8/86/Einstein_tongue.jpg";
+                    var mat = new BABYLON.StandardMaterial("mat1", this.scene);
+                    //mat.backFaceCulling = false;
+                    var texture = new BABYLON.Texture(url, this.scene);
+                    mat.diffuseTexture = texture;
+
+                    Image.material = mat;
+                    return Image;
+                    break;
+
+                case ShapeType.Audio:
+                    var planeOpts = {
+                        height: 1,
+                        width: 1,
+                        sideOrientation: BABYLON.Mesh.DOUBLESIDE
+                    };
+                    var Image = BABYLON.MeshBuilder.CreatePlane("audio", planeOpts, this.scene);
+                    var pos = (new BABYLON.Vector3(0, 0, 0.1))
+                    Image.position = position;
+                    // texture and material
+                    var url = "audio.png";
+                    var mat = new BABYLON.StandardMaterial("mat1", this.scene);
+                    //mat.backFaceCulling = false;
+
+                    audio = new Audio(url);
+
+                    var texture = new BABYLON.Texture(url, this.scene);
+                    mat.diffuseTexture = texture;
+                    audios.set(Image, audio);
+                    Image.material = mat;
+                    return Image;
+                    break;
+
+                case ShapeType.Video:
+                    var planeOpts = {
+                        height: 2,
+                        width: 2,
+                        sideOrientation: BABYLON.Mesh.DOUBLESIDE
+                    };
+                    var Video = BABYLON.MeshBuilder.CreatePlane("video", planeOpts, this.scene);
+                    var vidPos = (new BABYLON.Vector3(0, 0, 0.1))
+                    Video.position = position;
+                    var ANote0VideoMat = new BABYLON.StandardMaterial("m", this.scene);
+                    VideoTexture = new BABYLON.VideoTexture("babylon", url, this.scene);
+
+                    ANote0VideoMat.diffuseTexture = VideoTexture;
+                    ANote0VideoMat.roughness = 1;
+                    ANote0VideoMat.emissiveColor = BABYLON.Color3.White();
+                    VideoTexture.video.autoplay = false;
+                    Video.material = ANote0VideoMat;
+                    videos.set(Video, VideoTexture);
+                    // ANote0VideoVidTex.video.play();
+                    /*
+                this.scene.onPointerObservable.add(function (evt) {
+                  if (evt.pickInfo?.pickedMesh === Video) {
+                    //console.log("picked");
+                    if (ANote0VideoVidTex.video.paused)
+                      ANote0VideoVidTex.video.play();
+                    else
+                      ANote0VideoVidTex.video.pause();
+                    console.log(ANote0VideoVidTex.video.paused ? "paused" : "playing");
+                  }
+                }, PointerEventTypes.POINTERPICK);
+                */
+                    return Video;
+                    break;
+
+                case ShapeType.Text:
+                    // Create 3D text
+                    var text = this.label;
+                    var font = "36px Arial";
+                    var color = "white";
+                    var backgroundColor = "transparent";
+                    var textureText = new BABYLON.DynamicTexture("textTexture", 512, this.scene, true);
+                    textureText.hasAlpha = true;
+                    textureText.drawText(text, null, null, font, color, backgroundColor, true);
+
+                    // Create a plane to apply the texture
+                    var plane = BABYLON.MeshBuilder.CreatePlane("plane", { size: 2 }, this.scene);
+                    var material = new BABYLON.StandardMaterial("material", this.scene);
+                    material.diffuseTexture = textureText;
+                    plane.material = material;
+                    return plane;
+                    break;
+
+                case ShapeType.Button:
+                    // Define the dimensions of the cuboid
+                    var width = 0.2;    // User-defined width
+                    var height = 0.1;   // User-defined height
+                    var depth = 0.01;    // User-defined depth
+
+                    // Create the cuboid mesh
+                    var btn = BABYLON.MeshBuilder.CreateBox("cuboid", { size: width }, this.scene);
+                    btn.scaling.y = height / width;
+                    btn.scaling.z = depth / width;
+                    console.log('button Added: ', btn)
+                    return btn;
+                    break;
+            }
+            console.log('Meshes List: ', this.currentSceneMeshes);
+            console.log('Get Object pos: ');
+
+
+            var dumm = new BABYLON.Mesh("dummy", this.scene);
+            return dumm;
+        }
+
+
+
+        function generatePreview() {
+            console.log("Generate Preview code");
+            //   this.loadScene(1);
+            fillNodeMeshData();
+
+        }
+
+
+        function fillNodeMeshData() {
+            meshParent = BABYLON.MeshBuilder.CreateCylinder('cylinder', { diameterBottom: 0, diameterTop: 0, height: 0.5 });
+            for (let i = 0; i < scenes.length; i++) {
+
+                if (sceneIndex - 1 != i) {
+                    continue;
+                }
+
+                let a = BABYLON.MeshBuilder.CreateCylinder('cylinder', { diameterBottom: 0, diameterTop: 0, height: 0.5 });
+                meshNodeData[0] = a;
+
+                for (let meshObj of scenes[i].meshObjects) {
+                    console.log("mesh name" + meshObj.name);
+                    if (meshObj.mesh) {
+                        meshObj.mesh.setEnabled(true);
+                        console.log("mesh exists " + meshObj.mesh.name);
+                        let meshCopy = meshObj.mesh.clone(meshObj.mesh.name + "_copy");
+                        //   meshCopy.position = new BABYLON.Vector3(0, 0, 0);
+                        meshCopy.parent = meshNodeData[0];
+                        meshObj.mesh.setEnabled(false);
+                        meshCopy.isVisible = false;
+                        copyMap.set(meshCopy, meshObj.mesh);
+
+                    }
+                }
+                meshNodeData[0].parent = meshParent;
+                meshNodeData[0].isVisible = false;
+            }
+            console.log("node mesh data filled!");
+        }
+
+        function loadSceneNew(index) {
+            if (index == 0) {
+                return;
+            }
+
+            console.log("load scene index : " + index);
+
+            loadGltfOfScene(index - 1);
+
+            for (let i = 0; i < meshNodeData.length; i++) {
+                if (i == index - 1) {
+                    console.log("aaaa " + i);
+
+                    const children = meshNodeData[i].getChildren();
+                    for (let j = 0; j < children.length; j++) {
+                        const child = children[j];
+                        // Do something with each child node
+                        child.isVisible = true;
+                    }
+                    meshNodeData[i].isVisible = true;
+
+                }
+                else {
+                    console.log("nnn " + i);
+                    meshNodeData[i].isVisible = false;
+                    const children = meshNodeData[i].getChildren();
+                    for (let j = 0; j < children.length; j++) {
+                        const child = children[j];
+                        // Do something with each child node
+                        child.isVisible = false;
+                    }
+                    meshNodeData[i].isVisible = false;
+                }
+            }
+        }
+
+
+        function loadScene(index) {
+            console.log("index : " + index);
+
+            //  this.enableSceneMesh(false);
+
+            if (this.scenes[index - 1] != null) {
+                this.currentSceneMeshes = this.scenes[index - 1].meshObjects;
+                this.enableSceneMesh(true);
+            } else {
+                this.currentSceneMeshes = [];
+            }
+
+            this.sceneIndex = index - 1;
+        }
+
+        function loadGltfOfScene(index) {
+            console.log("load gltf of " + index);
+            for (var i = 0; i < gltfObjects.length; i++) {
+                for (var j = 0; j < gltfObjects[i].length; j++) {
+                    var element = gltfObjects[i][j];
+                    element.isVisible = false;
+                }
+            }
+
+            console.log("gltf set disabled");
+
+            for (var i = 0; i < gltfObjects[index].length; i++) {
+                var element = gltfObjects[index][i];
+                element.isVisible = true;
+            }
+
+            console.log("gltf set enabled");
+        }
+
+        function enableSceneMesh(value) {
+            let meshObj;
+            if (this.currentSceneMeshes) {
+                for (meshObj of this.currentSceneMeshes) {
+                    console.log("mesh name" + meshObj.name + value);
+                    if (meshObj.mesh) {
+                        console.log("mesh exist");
+                        meshObj.mesh.setEnabled(value);
+                    } else {
+                        console.log("mesh doesnt exists");
+                    }
+
+                }
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+
+        const ShapeType = {
+            Sphere: 'sphere',
+            Cube: 'cube',
+            Cylinder: 'cylinder',
+            Cone: 'cone',
+            Capsule: 'capsule',
+            PolyheDron: 'polyhedron',
+            GoldBerg: 'goldberg',
+            IcoSphere: 'icosphere',
+            Torus: 'torus',
+            TorusKnot: 'torusKnot',
+            GLTF: 'gltf',
+            Video: 'video',
+            Image: 'image',
+            Audio: 'audio',
+            Text: 'text',
+            Button: 'button'
+        }
+    </script>
+</body>
+</html>
